@@ -28,6 +28,8 @@ bool Renderer::start() {
 bool Renderer::stop() {
 	//stop the renderer
 	this->running = false;
+	free_window(this->ctx->window);
+	this->ctx = NULL;
 	return true;
 }
 

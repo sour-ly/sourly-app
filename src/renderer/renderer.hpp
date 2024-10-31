@@ -93,7 +93,7 @@ using PollEventType = MSG;
 
 #endif
 //linux specific logic for rendering
-#ifdef __APPLE__
+#if defined(__linux) || defined(__APPLE__)
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
@@ -256,10 +256,9 @@ inline bool init_window(WindowSettings* settings, WindowContext* out) {
 #ifdef _WIN32
 	//windows specific logic for rendering
 	Log::log("draw_window", "Device: Windows (GDI)\n");
-#elif __linux__
+#elif defined(__linux__) || defined(__APPLE__)
 	//linux specific logic for rendering
 	Log::log("draw_window", "Device: Linux (SDL2)\n");
-#elif __APPLE__
 	Log::log("draw_window", "Device: Apple (SDL3)\n");
 	draw_window_sdl(settings, out);
 	Log::fxAssert(out != NULL, "draw_window", "Failed to draw window\n");
@@ -271,9 +270,8 @@ inline bool init_window(WindowSettings* settings, WindowContext* out) {
 inline void draw_content(WindowContext* ctx) {
 #ifdef _WIN32
 	//windows specific logic for rendering
-#elif __linux__
+#elif defined(__linux__) || defined(__APPLE__)
 	//linux specific logic for rendering
-#elif __APPLE__
 	draw_content_sdl(ctx);
 #endif
 
@@ -283,9 +281,8 @@ inline void draw_content(WindowContext* ctx) {
 inline int poll_events(WindowContext* ctx, PollEvent<PollEventType>* out) {
 #ifdef _WIN32
 	//windows specific logic for rendering
-#elif __linux__
+#elif defined(__linux__) || defined(__APPLE__)
 	//linux specific logic for rendering
-#elif __APPLE__
 	SDL_Event* e = (SDL_Event*)malloc(sizeof(SDL_Event));
 	int r = SDL_PollEvent(e);	
 	if (r == 0) {
@@ -313,7 +310,7 @@ inline void free_window(WindowHandle* window) {
 #ifdef _WIN32
 	//windows specific logic for rendering
 	Log::log("free_window", "Device: Windows (GDI)\n");
-#elif __linux__ || __APPLE__
+#elif defined(__linux__) || defined(__APPLE__)
 	//linux specific logic for rendering
 	Log::log("free_window", "Device: Linux (SDL2)\n");
 	free_window_sdl(window);
@@ -324,10 +321,9 @@ inline bool init_renderer(WindowContext* ctx) {
 #ifdef _WIN32
 	//windows specific logic for rendering
 	Log::log("init_renderer", "Device: Windows (GDI)\n");
-#elif __linux__
+#elif defined(__linux__) || defined(__APPLE__)
 	//linux specific logic for rendering
 	Log::log("init_renderer", "Device: Linux (SDL2)\n");
-#elif __APPLE__
 	Log::log("init_renderer", "Device: Apple (SDL2)\n");
 	/*
 	bool quit = false;
