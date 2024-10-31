@@ -1,4 +1,5 @@
 #include "../log/log.h"
+#include <string>
 //@TITLEDOC Renderer class
 //This header file contains the declaration of the Renderer class and all renderering related macros and functions. The goal of this will to be write a simple renderer that can call more complex renderers for different platforms. Such as: Windows, SDL, and whatever Mac uses
 #ifndef RENDERER_H
@@ -36,7 +37,8 @@ struct TextSettings {
 	const char* text;
 	float size;
 	const char* color;
-	TextSettings(const char* _text, float _size, const char* _color) : text(_text), size(_size), color(_color) {}
+	Vector2 dimensions = {100, 25};
+	TextSettings(const char* _text, float _size, const char* _color, Vector2 _D) : text(_text), size(_size), color(_color), dimensions(_D) { _text = text, _size = size, _color = color, _D = dimensions; }
 };
 
 
@@ -119,7 +121,6 @@ bool clear_sdl(WindowContext* ctx) {
 	SDL_Renderer* renderer = get_renderer_sdl(ctx);
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	int a = SDL_RenderClear(renderer);
-	SDL_RenderPresent(renderer);
 	return a == 0;
 }
 
@@ -128,18 +129,22 @@ void draw_text_sdl(WindowContext* ctx, Vector2 pos, TextSettings* settings) {
 	SDL_Renderer* renderer = get_renderer_sdl(ctx);
 	SDL_Color color = { 255, 255, 255, 0 };
 	if (sdlContext.font == NULL) {
-		sdlContext.font = TTF_OpenFont("/System/Library/Fonts/Geneva.ttf", settings->size);
+		sdlContext.font = TTF_OpenFont("./assets/neue.otf", settings->size);
+		if (sdlContext.font == NULL) {
+			Log::log("draw_text_sdl", "Failed to load font (%s)\n", TTF_GetError());
+			return;
+		}
 	}
 	SDL_Surface* surface = TTF_RenderText_Solid(sdlContext.font, settings->text, color);
 	SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
 	SDL_Rect textRect;
 	textRect.x = pos.x;
 	textRect.y = pos.y;
-	textRect.w = 200;
-	textRect.h = 100;
+	textRect.w = 300;
+	textRect.h = 50;
+
 	//draw
 	SDL_RenderCopy(renderer, texture, NULL, &textRect);
-	SDL_RenderPresent(renderer);
 	//free
 	SDL_FreeSurface(surface);
 	SDL_DestroyTexture(texture);
@@ -237,24 +242,36 @@ bool init_renderer(WindowContext* ctx) {
 	SDL_Event e;
 	SDL_Window* window = (SDL_Window*)(ctx->window->handle);
 
-	TextSettings settings = TextSettings("Hello, World!", 12.0f, "white");
+	TextSettings settings = TextSettings("Hello, World!", 256.0f, "white", Vector2(0, 0));
 	Vector2 pos = {0, 0};
 	while (!quit) {
+		//clear the screen
+		if(!clear_sdl(ctx)) {
+			Log::log("init_renderer", "Failed to clear screen (%s)\n", SDL_GetError());
+		}	
+
+		//handle events
 		while (SDL_PollEvent(&e) != 0) {
-			
 			if (e.type == SDL_QUIT) {
 				quit = true;
 			}
 		}
+
+		//nonsense code
 		pos = getMouse_sdl(ctx);
+		std::string text = "Mouse x: " + std::to_string(pos.x) + " Mouse y: " + std::to_string(pos.y);
+		settings.text = new char[text.size() + 1];
+		strcpy((char*)settings.text, text.c_str());
+		// Don't forget to free this memory later to avoid memory leaks
 		draw_text_sdl(ctx, pos, &settings);
-		if(!clear_sdl(ctx)) {
-			Log::log("init_renderer", "Failed to clear screen (%s)\n", SDL_GetError());
-		}
-		
+		delete[] settings.text;
+
+		//clear the screen
+		SDL_RenderPresent(sdlContext.renderer);
 		SDL_GL_SwapWindow(window);
 	}
 
+	Log::log("init_renderer", "Freeing window\n");
 	free_window_sdl(ctx->window);
 	
 
