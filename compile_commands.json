@@ -1,0 +1,14 @@
+[
+{
+  "directory": "/Users/kevinerdogan/software/sourly-app/build",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/opt/homebrew/Cellar/sdl2/2.30.8/include -I/opt/homebrew/opt/sdl2_ttf/include -isystem /opt/homebrew/Cellar/sdl2/2.30.8/include/SDL2  -g -O0 -g -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.3.sdk -o CMakeFiles/sourly.dir/src/log/log.cpp.o -c /Users/kevinerdogan/software/sourly-app/src/log/log.cpp",
+  "file": "/Users/kevinerdogan/software/sourly-app/src/log/log.cpp",
+  "output": "CMakeFiles/sourly.dir/src/log/log.cpp.o"
+},
+{
+  "directory": "/Users/kevinerdogan/software/sourly-app/build",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/opt/homebrew/Cellar/sdl2/2.30.8/include -I/opt/homebrew/opt/sdl2_ttf/include -isystem /opt/homebrew/Cellar/sdl2/2.30.8/include/SDL2  -g -O0 -g -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.3.sdk -o CMakeFiles/sourly.dir/src/main.cpp.o -c /Users/kevinerdogan/software/sourly-app/src/main.cpp",
+  "file": "/Users/kevinerdogan/software/sourly-app/src/main.cpp",
+  "output": "CMakeFiles/sourly.dir/src/main.cpp.o"
+}
+]
