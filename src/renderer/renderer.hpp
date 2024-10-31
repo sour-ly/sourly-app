@@ -13,6 +13,22 @@ enum RendererType {
 	GDI,
 };
 
+struct RGBA {
+	uint8_t r;
+	uint8_t g;
+	uint8_t b;
+	uint8_t a;
+	RGBA(int _r, int _g, int _b, int _a) : r(_r), g(_g), b(_b), a(_a) {r = _r, g = _g, b = _b, a = _a;}
+};
+
+struct Vector2 {
+	double x;
+	double y;
+
+	Vector2(double _x, double _y) : x(_x), y(_y) { x = _x, y = _y; }
+	Vector2(int _x, int _y) : x((double) _x), y((double) _y) { x = (double) _x, y = (double) _y; }
+};
+
 struct WindowContext {
 	int width;
 	int height;
@@ -20,25 +36,37 @@ struct WindowContext {
 	WindowHandle* window;
 };
 
+struct WindowSettings {
+	int width = 800;
+	int height = 600;
+	const char* title = "Untitled";
+	RGBA background = {0, 0, 0, 255};
+	WindowSettings() {}
+	WindowSettings(const char* _title, int _width, int _height) : title(_title), width(_width), height(_height) { _title = title, _width = width, _height = height; }
+	WindowSettings(const char* _title, int _width, int _height, RGBA _background) : title(_title), width(_width), height(_height), background(_background) { _title = title, _width = width, _height = height, _background = background; }
+};
+
 struct WindowHandle {
 	RendererType type;	
 	void* handle;
 };
 
-struct Vector2 {
-	double x;
-	double y;
-
-	Vector2(double _x, double _y) : x(_x), y(_y) {}
-	Vector2(int _x, int _y) : x((double) _x), y((double) _y) {}
-};
 
 struct TextSettings {
 	const char* text;
 	float size;
-	const char* color;
+	RGBA color;
 	Vector2 dimensions = {100, 25};
-	TextSettings(const char* _text, float _size, const char* _color, Vector2 _D) : text(_text), size(_size), color(_color), dimensions(_D) { _text = text, _size = size, _color = color, _D = dimensions; }
+	TextSettings(const char* _text, float _size, RGBA _color, Vector2 _D) : text(_text), size(_size), color(_color), dimensions(_D) { _text = text, _size = size, _color = color, _D = dimensions; }
+	int flags = 0;
+};
+
+enum TextFlags {
+	BOLD = 1,
+	ITALIC = 2,
+	UNDERLINE = 4,
+	STRIKETHROUGH = 8,
+	ANTI_ALIAS = 16,
 };
 
 
@@ -63,14 +91,6 @@ struct TextSettings {
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL_ttf.h>
-
-struct RGBA {
-	int r;
-	int g;
-	int b;
-	int a;
-	RGBA(int _r, int _g, int _b, int _a) : r(_r), g(_g), b(_b), a(_a) {r = _r, g = _g, b = _b, a = _a;}
-};
 
 struct SDLContext {
 	TTF_Font* font;
@@ -119,7 +139,7 @@ SDL_Renderer* get_renderer_sdl(WindowContext* ctx) {
 bool clear_sdl(WindowContext* ctx) {
 	SDL_Window* window = (SDL_Window*)ctx->window->handle;
 	SDL_Renderer* renderer = get_renderer_sdl(ctx);
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+	SDL_SetRenderDrawColor(renderer, sdlContext.color.r, sdlContext.color.g, sdlContext.color.b, sdlContext.color.a);
 	int a = SDL_RenderClear(renderer);
 	return a == 0;
 }
@@ -127,7 +147,7 @@ bool clear_sdl(WindowContext* ctx) {
 void draw_text_sdl(WindowContext* ctx, Vector2 pos, TextSettings* settings) {
 	SDL_Window* window = (SDL_Window*)ctx->window->handle;
 	SDL_Renderer* renderer = get_renderer_sdl(ctx);
-	SDL_Color color = { 255, 255, 255, 0 };
+	SDL_Color color = {settings->color.r, settings->color.g, settings->color.b, settings->color.a};	
 	if (sdlContext.font == NULL) {
 		sdlContext.font = TTF_OpenFont("./assets/neue.otf", settings->size);
 		if (sdlContext.font == NULL) {
@@ -140,8 +160,8 @@ void draw_text_sdl(WindowContext* ctx, Vector2 pos, TextSettings* settings) {
 	SDL_Rect textRect;
 	textRect.x = pos.x;
 	textRect.y = pos.y;
-	textRect.w = 300;
-	textRect.h = 50;
+	textRect.w = settings->dimensions.x; 
+	textRect.h = settings->dimensions.y;
 
 	//draw
 	SDL_RenderCopy(renderer, texture, NULL, &textRect);
@@ -158,7 +178,7 @@ Vector2 getMouse_sdl(WindowContext* out) {
 	return pos;
 }
 
-void draw_window_sdl(WindowContext* out) {
+void draw_window_sdl(WindowSettings* settings, WindowContext* out) {
 	SDL_Window* window = NULL;
 	SDL_GLContext context = NULL;
 	TTF_Init();
@@ -168,7 +188,7 @@ void draw_window_sdl(WindowContext* out) {
 		return;
 	}
 
-	window = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+	window = SDL_CreateWindow(settings->title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, settings->width, settings->height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 	if (window == NULL) {
 		Log::log("draw_window_sdl", "Window could not be created! SDL_Error: %s\n", SDL_GetError());
 		return;
@@ -179,6 +199,8 @@ void draw_window_sdl(WindowContext* out) {
 		Log::log("draw_window_sdl", "OpenGL context could not be created! SDL_Error: %s\n", SDL_GetError());
 		return;
 	}
+
+	sdlContext.color = settings->background;
 
 	//flags 
 
@@ -213,7 +235,8 @@ void draw_window_sdl(WindowContext* out) {
 
 #endif
 
-bool draw_window(WindowContext* out) {
+//DO NOT FREE WINDOWSETTINGS
+bool init_window(WindowSettings* settings, WindowContext* out) {
 #ifdef _WIN32
 	//windows specific logic for rendering
 	Log::log("draw_window", "Device: Windows (GDI)\n");
@@ -222,7 +245,7 @@ bool draw_window(WindowContext* out) {
 	Log::log("draw_window", "Device: Linux (SDL2)\n");
 #elif __APPLE__
 	Log::log("draw_window", "Device: Apple (SDL3)\n");
-	draw_window_sdl(out);
+	draw_window_sdl(settings, out);
 	Log::fxAssert(out != NULL, "draw_window", "Failed to draw window\n");
 	return true;
 #endif
@@ -242,7 +265,7 @@ bool init_renderer(WindowContext* ctx) {
 	SDL_Event e;
 	SDL_Window* window = (SDL_Window*)(ctx->window->handle);
 
-	TextSettings settings = TextSettings("Hello, World!", 256.0f, "white", Vector2(0, 0));
+	TextSettings settings = TextSettings("Hello, World!", 512.0f, {0,0,0, 255}, Vector2(250, 20));
 	Vector2 pos = {0, 0};
 	while (!quit) {
 		//clear the screen
