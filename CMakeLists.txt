@@ -17,6 +17,10 @@ FILE(GLOB SOURCES "src/*.cpp", "src/*.h", "src/*.hpp" "src/**/*.cpp", "src/**/*.
 ADD_EXECUTABLE(${NAME} ${SOURCES})
 
 
+#include JSON
+set(JSON_INCLUDE_PATH "src/lib/json/include/")
+include_directories(${JSON_INCLUDE_PATH})
+
 # SDL2 please check if this is a linux or mac machine
 if (APPLE OR UNIX)
 		find_package(SDL2 REQUIRED)

@@ -1,5 +1,6 @@
 #include "../log/log.h"
 #include <string>
+#include "../events/events.h"
 //@TITLEDOC Renderer class
 //This header file contains the declaration of the Renderer class and all renderering related macros and functions. The goal of this will to be write a simple renderer that can call more complex renderers for different platforms. Such as: Windows, SDL, and whatever Mac uses
 #ifndef RENDERER_H
@@ -7,6 +8,7 @@
 
 typedef struct WindowContext WindowContext;
 typedef struct WindowHandle WindowHandle;
+typedef class Renderer Renderer;
 
 enum RendererType {
 	SDL,
@@ -71,26 +73,33 @@ enum TextFlags {
 
 
 
+
+template <typename T>
+struct PollEvent {
+	T* event = NULL;
+	PollEvent() {}
+	PollEvent(T* _event) : event(_event) { event = _event; }
+};
+
+
+
 //windows specific logic for rendering
 #ifdef _WIN32
 #include <windows.h>
 
-
+using PollEventType = MSG;
 
 
 
 #endif
 //linux specific logic for rendering
-#ifdef __linux__
-
-
-#endif
-//macos + SDL
-#ifdef __APPLE__ 
+#ifdef __APPLE__
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL_ttf.h>
+
+using PollEventType = SDL_Event;
 
 struct SDLContext {
 	TTF_Font* font;
@@ -100,7 +109,7 @@ struct SDLContext {
 
 static SDLContext sdlContext = {};
 
-void free_window_sdl(WindowHandle* window) {
+inline void free_window_sdl(WindowHandle* window) {
 	if (window == NULL) {
 		Log::log("free_window_sdl", "Window handle is null\n");
 		return;
@@ -110,7 +119,7 @@ void free_window_sdl(WindowHandle* window) {
 }
 
 
-bool create_renderer_sdl(WindowContext* ctx) {
+inline bool create_renderer_sdl(WindowContext* ctx) {
 	if (ctx->window == NULL) {
 		Log::log("create_renderer_sdl", "Window handle is null\n");
 		return false;
@@ -129,14 +138,14 @@ bool create_renderer_sdl(WindowContext* ctx) {
 	return true;
 }
 
-SDL_Renderer* get_renderer_sdl(WindowContext* ctx) {
+inline SDL_Renderer* get_renderer_sdl(WindowContext* ctx) {
 	if (sdlContext.renderer == NULL) {
 		Log::fxAssert(create_renderer_sdl(ctx), "get_renderer_sdl", "Failed to create renderer (%s)\n", SDL_GetError());
 	}
 	return sdlContext.renderer;
 }
 
-bool clear_sdl(WindowContext* ctx) {
+inline bool clear_sdl(WindowContext* ctx) {
 	SDL_Window* window = (SDL_Window*)ctx->window->handle;
 	SDL_Renderer* renderer = get_renderer_sdl(ctx);
 	SDL_SetRenderDrawColor(renderer, sdlContext.color.r, sdlContext.color.g, sdlContext.color.b, sdlContext.color.a);
@@ -144,7 +153,7 @@ bool clear_sdl(WindowContext* ctx) {
 	return a == 0;
 }
 
-void draw_text_sdl(WindowContext* ctx, Vector2 pos, TextSettings* settings) {
+inline void draw_text_sdl(WindowContext* ctx, Vector2 pos, TextSettings* settings) {
 	SDL_Window* window = (SDL_Window*)ctx->window->handle;
 	SDL_Renderer* renderer = get_renderer_sdl(ctx);
 	SDL_Color color = {settings->color.r, settings->color.g, settings->color.b, settings->color.a};	
@@ -171,7 +180,7 @@ void draw_text_sdl(WindowContext* ctx, Vector2 pos, TextSettings* settings) {
 	SDL_DestroyTexture(texture);
 }
 
-Vector2 getMouse_sdl(WindowContext* out) {
+inline Vector2 getMouse_sdl(WindowContext* out) {
 	int x, y;
 	SDL_GetMouseState(&x, &y);
 	Vector2 pos = Vector2(x, y);
@@ -179,7 +188,7 @@ Vector2 getMouse_sdl(WindowContext* out) {
 	return pos;
 }
 
-void draw_window_sdl(WindowSettings* settings, WindowContext* out) {
+inline void draw_window_sdl(WindowSettings* settings, WindowContext* out) {
 	SDL_Window* window = NULL;
 	SDL_GLContext context = NULL;
 	TTF_Init();
@@ -234,10 +243,16 @@ void draw_window_sdl(WindowSettings* settings, WindowContext* out) {
 	
 }
 
+inline void draw_content_sdl(WindowContext* ctx) {
+	SDL_Window* window = (SDL_Window*)(ctx->window->handle);
+	SDL_RenderPresent(get_renderer_sdl(ctx));
+	SDL_GL_SwapWindow(window);
+}
+
 #endif
 
 //DO NOT FREE WINDOWSETTINGS
-bool init_window(WindowSettings* settings, WindowContext* out) {
+inline bool init_window(WindowSettings* settings, WindowContext* out) {
 #ifdef _WIN32
 	//windows specific logic for rendering
 	Log::log("draw_window", "Device: Windows (GDI)\n");
@@ -253,7 +268,59 @@ bool init_window(WindowSettings* settings, WindowContext* out) {
 	return false;
 }
 
-bool init_renderer(WindowContext* ctx) {
+inline void draw_content(WindowContext* ctx) {
+#ifdef _WIN32
+	//windows specific logic for rendering
+#elif __linux__
+	//linux specific logic for rendering
+#elif __APPLE__
+	draw_content_sdl(ctx);
+#endif
+
+}
+
+
+inline int poll_events(WindowContext* ctx, PollEvent<PollEventType>* out) {
+#ifdef _WIN32
+	//windows specific logic for rendering
+#elif __linux__
+	//linux specific logic for rendering
+#elif __APPLE__
+	SDL_Event* e = (SDL_Event*)malloc(sizeof(SDL_Event));
+	int r = SDL_PollEvent(e);	
+	if (r == 0) {
+		free(e);
+		return 0;
+	}
+	out->event = e;
+	return r;
+
+#endif
+	return 0;
+}
+
+inline bool clear_window(WindowContext* ctx) {
+#ifdef _WIN32
+	//windows specific logic for rendering
+#elif __linux__ || __APPLE__
+	//linux specific logic for rendering
+	return clear_sdl(ctx);
+#endif
+	return false;
+}
+
+inline void free_window(WindowHandle* window) {
+#ifdef _WIN32
+	//windows specific logic for rendering
+	Log::log("free_window", "Device: Windows (GDI)\n");
+#elif __linux__ || __APPLE__
+	//linux specific logic for rendering
+	Log::log("free_window", "Device: Linux (SDL2)\n");
+	free_window_sdl(window);
+#endif
+}
+
+inline bool init_renderer(WindowContext* ctx) {
 #ifdef _WIN32
 	//windows specific logic for rendering
 	Log::log("init_renderer", "Device: Windows (GDI)\n");
@@ -262,6 +329,7 @@ bool init_renderer(WindowContext* ctx) {
 	Log::log("init_renderer", "Device: Linux (SDL2)\n");
 #elif __APPLE__
 	Log::log("init_renderer", "Device: Apple (SDL2)\n");
+	/*
 	bool quit = false;
 	SDL_Event e;
 	SDL_Window* window = (SDL_Window*)(ctx->window->handle);
@@ -288,17 +356,25 @@ bool init_renderer(WindowContext* ctx) {
 		//clear the screen
 		SDL_RenderPresent(sdlContext.renderer);
 		SDL_GL_SwapWindow(window);
-	}
-
-	Log::log("init_renderer", "Freeing window\n");
-	free_window_sdl(ctx->window);
-	
-
+		*/
 #endif
 
 	return true;
 }
 
 
+class Renderer : public Eventful<WindowContext> {
+public:
+	Renderer(); 
+	~Renderer();
+	bool start(); 
+	bool stop(); 
+private:
+	RendererType type;
+	WindowContext* ctx;
+	bool running = false;
+	inline void tick();
+};
 
 #endif
+
