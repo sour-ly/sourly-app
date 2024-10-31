@@ -107,4 +107,8 @@ class Skill : public Eventful<SkillEvent>{
 			}
 			return NULL;
 		}
+
+		std::vector<Goal> getGoals() {
+			return goals;
+		}
 };

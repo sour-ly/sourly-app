@@ -51,6 +51,10 @@ class Goal : public Eventful<GoalEvent>{
 		}
 		~Goal() {
 		}
+		
+		const char* getName() {
+			return name;
+		}
 
 		const unsigned long getId() {
 			return id;
