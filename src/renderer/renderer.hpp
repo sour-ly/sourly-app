@@ -154,6 +154,7 @@ void draw_text_sdl(WindowContext* ctx, Vector2 pos, TextSettings* settings) {
 			Log::log("draw_text_sdl", "Failed to load font (%s)\n", TTF_GetError());
 			return;
 		}
+		Log::log("draw_text_sdl", "Loaded font %s\n", "./assets/neue.otf");
 	}
 	SDL_Surface* surface = TTF_RenderText_Solid(sdlContext.font, settings->text, color);
 	SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
@@ -265,7 +266,7 @@ bool init_renderer(WindowContext* ctx) {
 	SDL_Event e;
 	SDL_Window* window = (SDL_Window*)(ctx->window->handle);
 
-	TextSettings settings = TextSettings("Hello, World!", 512.0f, {0,0,0, 255}, Vector2(250, 20));
+	TextSettings settings = TextSettings("I know where you live", 512.0f, {0,0,0, 255}, Vector2(512, 64));
 	Vector2 pos = {0, 0};
 	while (!quit) {
 		//clear the screen
@@ -282,12 +283,7 @@ bool init_renderer(WindowContext* ctx) {
 
 		//nonsense code
 		pos = getMouse_sdl(ctx);
-		std::string text = "Mouse x: " + std::to_string(pos.x) + " Mouse y: " + std::to_string(pos.y);
-		settings.text = new char[text.size() + 1];
-		strcpy((char*)settings.text, text.c_str());
-		// Don't forget to free this memory later to avoid memory leaks
 		draw_text_sdl(ctx, pos, &settings);
-		delete[] settings.text;
 
 		//clear the screen
 		SDL_RenderPresent(sdlContext.renderer);
