@@ -36,6 +36,9 @@ struct WindowContext {
 	int height;
 	const char* title;
 	WindowHandle* window;
+	//leave a variable for the current framerate
+	float currentFramerate = 0.0f;
+
 };
 
 struct WindowSettings {
@@ -71,17 +74,12 @@ enum TextFlags {
 	ANTI_ALIAS = 16,
 };
 
-
-
-
 template <typename T>
 struct PollEvent {
 	T* event = NULL;
 	PollEvent() {}
 	PollEvent(T* _event) : event(_event) { event = _event; }
 };
-
-
 
 //windows specific logic for rendering
 #ifdef _WIN32
@@ -129,7 +127,7 @@ inline bool create_renderer_sdl(WindowContext* ctx) {
 		return false;
 	}
 	SDL_Window* window = (SDL_Window*)ctx->window->handle;
-	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	if (renderer == NULL) {
 		Log::log("create_renderer_sdl", "Failed to create renderer (%s)\n", SDL_GetError());
 		return false;
@@ -151,6 +149,20 @@ inline bool clear_sdl(WindowContext* ctx) {
 	SDL_SetRenderDrawColor(renderer, sdlContext.color.r, sdlContext.color.g, sdlContext.color.b, sdlContext.color.a);
 	int a = SDL_RenderClear(renderer);
 	return a == 0;
+}
+
+/* DRAW FUNCTIONS */
+
+inline void draw_rect_sdl(WindowContext* ctx, Vector2 pos, Vector2 size, RGBA color) {
+	SDL_Window* window = (SDL_Window*)ctx->window->handle;
+	SDL_Renderer* renderer = get_renderer_sdl(ctx);
+	SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+	SDL_Rect rect;
+	rect.x = pos.x;
+	rect.y = pos.y;
+	rect.w = size.x;
+	rect.h = size.y;
+	SDL_RenderFillRect(renderer, &rect);
 }
 
 inline void draw_text_sdl(WindowContext* ctx, Vector2 pos, TextSettings* settings) {
@@ -193,7 +205,7 @@ inline void draw_window_sdl(WindowSettings* settings, WindowContext* out) {
 	SDL_GLContext context = NULL;
 	TTF_Init();
 
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_RENDERER_PRESENTVSYNC) < 0) {
+	if (SDL_Init(SDL_INIT_VIDEO ) < 0) {
 		Log::log("draw_window_sdl", "SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
 		return;
 	}
@@ -358,18 +370,45 @@ inline bool init_renderer(WindowContext* ctx) {
 	return true;
 }
 
+/* DRAW FUNCTIONS ABSTRACTED */
+
+inline void draw_text(WindowContext* ctx, Vector2 pos, TextSettings* settings) {
+#ifdef _WIN32
+	//windows specific logic for rendering
+	Log::fxAssert(false, "draw_text", "Not implemented\n");
+#elif defined(__linux__) || defined(__APPLE__)
+	//linux specific logic for rendering
+	draw_text_sdl(ctx, pos, settings);
+#endif
+}
+
+inline void draw_rect(WindowContext* ctx, Vector2 pos, Vector2 size, RGBA color) {
+#ifdef _WIN32
+	//windows specific logic for rendering
+	Log::fxAssert(false, "draw_rect", "Not implemented\n");
+#elif defined(__linux__) || defined(__APPLE__)
+	//linux specific logic for rendering
+	draw_rect_sdl(ctx, pos, size, color);
+#endif
+}
+
 
 class Renderer : public Eventful<WindowContext> {
 public:
 	Renderer(); 
+	Renderer(int _width, int _height) : width(_width), height(_height) { width = _width, height = _height; }
 	~Renderer();
 	bool start(); 
 	bool stop(); 
+	int getWidth() { return this->width; }
+	int getHeight() { return this->height; }
 private:
 	RendererType type;
 	WindowContext* ctx;
 	bool running = false;
 	inline void tick();
+	int width = 800;
+	int height = 600;
 };
 
 #endif

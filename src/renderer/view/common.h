@@ -1,0 +1,21 @@
+#pragma once
+#include "../renderer.hpp"
+
+enum ElementEventType {
+	ELEMENT_EVENT_CLICK,
+	ELEMENT_EVENT_HOVER,
+	ELEMENT_EVENT_FOCUS,
+	ELEMENT_EVENT_BLUR,
+	ELEMENT_EVENT_KEYDOWN,
+	ELEMENT_EVENT_KEYUP,
+	ELEMENT_EVENT_KEYPRESS,
+	ELEMENT_EVENT_MOUSEMOVE,
+	ELEMENT_EVENT_MOUSEOUT,
+	ELEMENT_EVENT_MOUSEENTER,
+};
+
+
+struct {
+	ElementEventType type;
+	void* data;
+} typedef ElementEvent;	

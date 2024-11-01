@@ -11,7 +11,7 @@ SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0") # Add debug symbols and disable optimizations
 
-FILE(GLOB SOURCES "src/*.cpp", "src/*.h", "src/*.hpp" "src/**/*.cpp", "src/**/*.h", "src/**/*.hpp")
+FILE(GLOB SOURCES "src/*.cpp", "src/*.h", "src/*.hpp" "src/**/*.cpp", "src/**/*.h", "src/**/*.hpp", "src/**/**/*.cpp", "src/**/**/*.h", "src/**/**/*.hpp")
 
 # add the executable
 ADD_EXECUTABLE(${NAME} ${SOURCES})
